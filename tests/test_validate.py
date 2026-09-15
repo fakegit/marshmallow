@@ -1,9 +1,10 @@
 """Tests for marshmallow.validate"""
 
 import re
+
 import pytest
 
-from marshmallow import validate, ValidationError
+from marshmallow import ValidationError, validate
 
 
 @pytest.mark.parametrize(
@@ -28,6 +29,11 @@ from marshmallow import validate, ValidationError
         "http://www.example.com:8000/foo",
         "http://user@example.com",
         "http://user:pass@example.com",
+        "http://:pass@example.com",
+        "http://@example.com",
+        "http://AZaz09-._~%2A!$&'()*+,;=:@example.com",
+        "http://example.org#fragment",
+        "http://user@example.com#fragment",
     ],
 )
 def test_url_absolute_valid(valid_url):
@@ -57,6 +63,12 @@ def test_url_absolute_valid(valid_url):
         " ",
         "",
         None,
+        "http://user@pass@example.com",
+        "http://@pass@example.com",
+        "http://@@example.com",
+        "http://^@example.com",
+        "http://%0G@example.com",
+        "http://%@example.com",
     ],
 )
 def test_url_absolute_invalid(invalid_url):
@@ -75,6 +87,10 @@ def test_url_absolute_invalid(invalid_url):
         "http://example.com/./icons/logo.gif",
         "ftp://example.com/../../../../g",
         "http://example.com/g?y/./x",
+        "/foo/bar",
+        "/foo?bar",
+        "/foo?bar#baz",
+        "#frag",
     ],
 )
 def test_url_relative_valid(valid_url):
@@ -82,7 +98,7 @@ def test_url_relative_valid(valid_url):
     assert validator(valid_url) == valid_url
 
 
-@pytest.mark.parametrize(  # noqa: W605
+@pytest.mark.parametrize(
     "invalid_url",
     [
         "http//example.org",
@@ -100,6 +116,49 @@ def test_url_relative_valid(valid_url):
 )
 def test_url_relative_invalid(invalid_url):
     validator = validate.URL(relative=True)
+    with pytest.raises(ValidationError):
+        validator(invalid_url)
+
+
+@pytest.mark.parametrize(
+    "valid_url",
+    [
+        "/foo/bar",
+        "/foo?bar",
+        "?bar",
+        "/foo?bar#baz",
+        "#frag",
+    ],
+)
+def test_url_relative_only_valid(valid_url):
+    validator = validate.URL(relative=True, absolute=False)
+    assert validator(valid_url) == valid_url
+
+
+@pytest.mark.parametrize(
+    "invalid_url",
+    [
+        "http//example.org",
+        "http://example.org\n",
+        "suppliers.html",
+        "../icons/logo.gif",
+        "icons/logo.gif",
+        "../.../g",
+        "...",
+        "\\",
+        " ",
+        "",
+        "http://example.org",
+        "http://123.45.67.8/",
+        "http://example.com/foo/bar/../baz",
+        "https://example.com/../icons/logo.gif",
+        "http://example.com/./icons/logo.gif",
+        "ftp://example.com/../../../../g",
+        "http://example.com/g?y/./x",
+    ],
+)
+def test_url_relative_only_invalid(invalid_url):
+    validator = validate.URL(relative=True, absolute=False)
     with pytest.raises(ValidationError):
         validator(invalid_url)
 
@@ -150,6 +209,56 @@ def test_url_custom_scheme():
     assert validator(url) == url
 
 
+def test_url_custom_scheme_case_insensitive():
+    validator = validate.URL(schemes={"HTTP"})
+    assert validator("http://example.com") == "http://example.com"
+
+    validator = validate.URL(schemes={"HtTp"})
+    assert validator("hTtP://example.com") == "hTtP://example.com"
+
+
+@pytest.mark.parametrize(
+    "valid_url",
+    (
+        "file:///tmp/tmp1234",
+        "file://localhost/tmp/tmp1234",
+        "file:///C:/Users/test/file.txt",
+        "file://localhost/C:/Program%20Files/file.exe",
+        "file:///home/user/documents/test.pdf",
+        "file:///tmp/test%20file.txt",
+        "file:///",
+        "file://localhost/",
+        "FILE:///tmp/tmp1234",
+        "FILE://localhost/tmp/tmp1234",
+        "FILE:///C:/Users/test/file.txt",
+        "FILE://localhost/C:/Program%20Files/file.exe",
+        "FILE:///home/user/documents/test.pdf",
+        "FILE:///tmp/test%20file.txt",
+        "FILE:///",
+        "FILE://localhost/",
+    ),
+)
+def test_url_accepts_valid_file_urls(valid_url):
+    validator = validate.URL(schemes={"file"})
+    assert validator(valid_url) == valid_url
+
+
+@pytest.mark.parametrize(
+    "invalid_url",
+    (
+        "file://",
+        "file:/tmp/file.txt",
+        "file:tmp/file.txt",
+        "file://hostname/path",
+        "file:///tmp/test file.txt",
+    ),
+)
+def test_url_rejects_invalid_file_urls(invalid_url):
+    validator = validate.URL(schemes={"file"})
+    with pytest.raises(ValidationError, match="Not a valid URL."):
+        assert validator(invalid_url)
+
+
 def test_url_relative_and_custom_schemes():
     validator = validate.URL(relative=True)
     # By default, ws not allowed
@@ -170,10 +279,50 @@ def test_url_custom_message():
 def test_url_repr():
     assert repr(
         validate.URL(relative=False, error=None)
-    ) == "<URL(relative=False, error={!r})>".format("Not a valid URL.")
+    ) == "<URL(relative=False, absolute=True, error={!r})>".format("Not a valid URL.")
     assert repr(
         validate.URL(relative=True, error="foo")
-    ) == "<URL(relative=True, error={!r})>".format("foo")
+    ) == "<URL(relative=True, absolute=True, error={!r})>".format("foo")
+    assert repr(
+        validate.URL(relative=True, absolute=False, error="foo")
+    ) == "<URL(relative=True, absolute=False, error={!r})>".format("foo")
+
+
+def test_url_rejects_invalid_relative_usage():
+    with pytest.raises(
+        ValueError,
+        match="URL validation cannot set both relative and absolute to False",
+    ):
+        validate.URL(relative=False, absolute=False)
+
+
+@pytest.mark.parametrize(
+    "valid_url",
+    [
+        "https://তৌহিদুর.বাংলা",
+        "https://münchen.de",
+        "https://例え.jp/path",
+        "http://مثال.إختبار",
+        "https://üñîçödé.com/path?q=1#frag",
+        "http://www.اختبار.com:8080/path",
+    ],
+)
+def test_url_idn_valid(valid_url):
+    validator = validate.URL()
+    assert validator(valid_url) == valid_url
+
+
+@pytest.mark.parametrize(
+    "invalid_url",
+    [
+        "münchen.de",
+        "তৌহিদুর.বাংলা",
+    ],
+)
+def test_url_idn_invalid(invalid_url):
+    validator = validate.URL()
+    with pytest.raises(ValidationError):
+        validator(invalid_url)
 
 
 @pytest.mark.parametrize(
@@ -218,6 +367,37 @@ def test_email_valid(valid_email):
     ],
 )
 def test_email_invalid(invalid_email):
+    validator = validate.Email()
+    with pytest.raises(ValidationError):
+        validator(invalid_email)
+
+
+@pytest.mark.parametrize(
+    "valid_email",
+    [
+        "user@münchen.de",
+        "user@例え.jp",
+        "user@مثال.إختبار",
+        "user@пример.испытание",
+        "user@üñîçödé.com",
+        "δοκ.ιμή@παράδειγμα.δοκιμή",
+        "user@sub.münchen.de",
+    ],
+)
+def test_email_idn_valid(valid_email):
+    validator = validate.Email()
+    assert validator(valid_email) == valid_email
+
+
+@pytest.mark.parametrize(
+    "invalid_email",
+    [
+        "user@-münchen.de",
+        "user@münchen-.de",
+        "user@münchen",
+    ],
+)
+def test_email_idn_invalid(invalid_email):
     validator = validate.Email()
     with pytest.raises(ValidationError):
         validator(invalid_email)
@@ -291,14 +471,17 @@ def test_range_repr():
                 min=None, max=None, error=None, min_inclusive=True, max_inclusive=True
             )
         )
-        == "<Range(min=None, max=None, min_inclusive=True, max_inclusive=True, error=None)>"  # noqa: B950
+        == "<Range(min=None, max=None, min_inclusive=True, max_inclusive=True, error=None)>"
     )
-    assert repr(
-        validate.Range(
-            min=1, max=3, error="foo", min_inclusive=False, max_inclusive=False
+    assert (
+        repr(
+            validate.Range(
+                min=1, max=3, error="foo", min_inclusive=False, max_inclusive=False
+            )
         )
-    ) == "<Range(min=1, max=3, min_inclusive=False, max_inclusive=False, error={!r})>".format(  # noqa: B950
-        "foo"
+        == "<Range(min=1, max=3, min_inclusive=False, max_inclusive=False, error={!r})>".format(
+            "foo"
+        )
     )
 
 
@@ -352,12 +535,12 @@ def test_length_equal():
         validate.Length(equal=2)("foo")
     with pytest.raises(ValidationError):
         validate.Length(equal=2)([1, 2, 3])
-
-    with pytest.raises(ValueError):
+    error_message = "The `equal` parameter was provided, maximum or minimum parameter must not be provided"
+    with pytest.raises(ValueError, match=error_message):
         validate.Length(1, None, equal=3)("foo")
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=error_message):
         validate.Length(None, 5, equal=3)("foo")
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=error_message):
         validate.Length(1, 5, equal=3)("foo")
 
 
@@ -607,12 +790,16 @@ def test_oneof_options():
     assert list(oneof.options()) == expected
 
     oneof = validate.OneOf([1, 2], ["one", "two", "three"])
-    expected = [("1", "one"), ("2", "two"), ("", "three")]
+    expected = [("1", "one"), ("2", "two")]
     assert list(oneof.options()) == expected
 
     oneof = validate.OneOf([1, 2])
     expected = [("1", ""), ("2", "")]
     assert list(oneof.options()) == expected
+
+    # Empty choices with extra labels should produce no options
+    oneof = validate.OneOf(choices=[], labels=["extra"])
+    assert list(oneof.options()) == []
 
 
 def test_oneof_text():

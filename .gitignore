@@ -62,6 +62,7 @@ _sandbox
 pylintrc
 
 # Virtualenvs
+.venv
 env
 venv
 
@@ -79,3 +80,6 @@ venv
 .mypy_cache/
 .dmypy.json
 dmypy.json
+
+# ruff
+.ruff_cache

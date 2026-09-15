@@ -171,3 +171,22 @@ Contributors (chronological)
 - Karthikeyan Singaravelan `@tirkarthi  <https://github.com/tirkarthi>`_
 - Marco Satti `@marcosatti  <https://github.com/marcosatti>`_
 - Ivo Reumkens `@vanHoi <https://github.com/vanHoi>`_
+- Aditya Tewary `@aditkumar72 <https://github.com/aditkumar72>`_
+- Sebastien Lovergne `@TheBigRoomXXL <https://github.com/TheBigRoomXXL>`_
+- Peter C `@somethingnew2-0 <https://github.com/somethingnew2-0>`_
+- Marcel Jackwerth `@mrcljx <https://github.com/mrcljx>`_
+- Fares Abubaker `@Fares-Abubaker <https://github.com/Fares-Abubaker>`_
+- Dharanikumar Sekar `@dharani7998 <https://github.com/dharani7998>`_
+- Nicolas Simonds `@0xDEC0DE <https://github.com/0xDEC0DE>`_
+- Florian Laport `@Florian-Laport <https://github.com/Florian-Laport>`_
+- `@agentgodzilla <https://github.com/agentgodzilla>`_
+- Xiao `@T90REAL <https://github.com/T90REAL>`_
+- jfo `@jafournier <https://github.com/jafournier>`_
+- thanhlecongg `@thanhlecongg <https://github.com/thanhlecongg>`_
+- Emmanuel Ferdman  `@emmanuel-ferdman  <https://github.com/emmanuel-ferdman>`_
+- Fridayworks `@worksbyfriday  <https://github.com/worksbyfriday>`_
+- `@rstar327 <https://github.com/rstar327>`_
+- Kadir Can Ozden  `@bysiber  <https://github.com/bysiber>`_
+- Dhruvil Darji  `@dhruvildarji  <https://github.com/dhruvildarji>`_
+- Haïm Dimer `@hdimer  <https://github.com/hdimer>`_
+- `@vidigoat <https://github.com/vidigoat>`_
